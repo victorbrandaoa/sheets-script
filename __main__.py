@@ -20,9 +20,9 @@ def sprint_formatter(field):
 
 
 formatters = {
-  'Title': lambda field: field.get('text', ''),
-  'Status': lambda field: field.get('name', ''),
-  'Date': lambda field: field.get('date', ''),
+  'Title': lambda field: { 'Title': field.get('text', '') },
+  'Status': lambda field: { 'Status': field.get('name', '') },
+  'Date': lambda field: { 'Date': field.get('date', '') },
   'Sprint': sprint_formatter
 }
 
@@ -49,8 +49,6 @@ def get_project_items_count(client, project_id):
 
   return result.get('node').get('items').get('totalCount')
 
-# def format_fields()
-
 
 def get_project_items(client, project_id, items_count):
   query = gql(build_get_all_project_items_query(project_id, items_count))
@@ -63,8 +61,8 @@ def get_project_items(client, project_id, items_count):
     tmp = {}
     for field in fields:
       name = field.get('field').get('name')
-      formatter = formatters.get(name, lambda _: '')
-      tmp[name] = formatter(field)
+      formatter = formatters.get(name, lambda _: { name: '' })
+      tmp = { **tmp, **formatter(field) }
     resp.append(tmp)
   
   return resp
