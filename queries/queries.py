@@ -57,14 +57,6 @@ def build_get_all_project_items_query(project_id, items_count):
                         }}
                       }}
                     }}
-                    ... on ProjectV2ItemFieldDateValue {{
-                      date
-                      field {{
-                        ... on ProjectV2Field {{
-                          name
-                        }}
-                      }}
-                    }}
                     ... on ProjectV2ItemFieldIterationValue {{
                       title
                       duration
