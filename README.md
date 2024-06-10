@@ -44,6 +44,8 @@ PROJECT_NAMES='App Firewall,Yara project,OCA'
 ORGS='nufuturo-ufcg,nufuturo-ufcg,OCA-UFCG'
 ```
 
+Before running, you need to fill the .env file with your GitHub Token, bear in mind that you must be part of the organization to be able to access the GitHub Projects of the organization.
+
 Once you edited the params in the Makefile, you can use the following command to run:
 
 ```sh
