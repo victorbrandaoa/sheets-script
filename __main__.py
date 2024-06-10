@@ -6,7 +6,7 @@ from queries import  (
   build_get_project_items_count_query,
   build_get_all_project_items_query
 )
-from utils import GITHUB_GRAPHQL_URL, ORGANIZATION, formatters, format_data
+from utils import GITHUB_GRAPHQL_URL, formatters, format_data
 from dotenv import load_dotenv
 import os
 
@@ -25,6 +25,7 @@ def parse_arguments():
   parser.add_argument('--sample-sheet-id')
   parser.add_argument('--sample-range-names')
   parser.add_argument('--project-names')
+  parser.add_argument('--organizations')
   return parser.parse_args()
 
 
@@ -37,8 +38,8 @@ def create_client():
   return Client(transport=transport, fetch_schema_from_transport=True)
 
 
-def get_project_id_by_name(client, name):
-  query = gql(build_get_all_projects_from_org_query(ORGANIZATION))
+def get_project_id_by_name(client, organization, name):
+  query = gql(build_get_all_projects_from_org_query(organization))
   result = client.execute(query)
 
   nodes = result.get('organization').get('projectsV2').get('nodes')
@@ -94,9 +95,9 @@ def google_auth():
   return creds
 
 
-def run(sheet_id, range_name, project_name):
+def run(sheet_id, range_name, organization, project_name):
   client = create_client()
-  project_id = get_project_id_by_name(client, project_name)
+  project_id = get_project_id_by_name(client, organization, project_name)
   items_count = get_project_items_count(client, project_id)
 
   data = get_project_items(client, project_id, items_count)
@@ -122,11 +123,12 @@ def main():
   sheet_id = args.sample_sheet_id
   range_names = args.sample_range_names.split(',')
   project_names = args.project_names.split(',')
+  organizations = args.organizations.split(',')
 
-  for item in zip(range_names, project_names):
-    range_name, project_name = item
+  for item in zip(range_names, project_names, organizations):
+    range_name, project_name, organization = item
     print(f'Running for {project_name}')
-    run(sheet_id, range_name, project_name)
+    run(sheet_id, range_name, organization, project_name)
 
 
 if __name__ == '__main__':

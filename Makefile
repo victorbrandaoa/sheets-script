@@ -5,8 +5,9 @@ VENV=venv
 PYTHON=$(VENV)/bin/python3
 PIP=$(VENV)/bin/pip
 SHEET_ID=1Ek5cl3SoJbuo5946G6TFyssjISu--8poMg5sQsWmT0w
-RANGE_NAMES='[APP FIREWALL] Timeline 2024.1,[YARA] Timeline 2024.1'
-PROJECT_NAMES='App Firewall,Yara project'
+RANGE_NAMES='[APP FIREWALL] Timeline 2024.1,[YARA] Timeline 2024.1,[OCA] Timeline 2024.1'
+PROJECT_NAMES='App Firewall,Yara project,OCA'
+ORGS='nufuturo-ufcg,nufuturo-ufcg,OCA-UFCG'
 
 venv:
 	python3 -m venv $(VENV)
@@ -19,6 +20,7 @@ run: venv
 		--sample-sheet-id $(SHEET_ID) \
 		--sample-range-names $(RANGE_NAMES) \
 		--project-names $(PROJECT_NAMES) \
+		--organizations $(ORGS) \
 
 clean:
 	rm -rf $(VENV)
