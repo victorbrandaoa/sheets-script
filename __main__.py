@@ -1,3 +1,4 @@
+import argparse
 from gql import Client, gql
 from gql.transport.aiohttp import AIOHTTPTransport
 from queries import  (
@@ -5,11 +6,9 @@ from queries import  (
   build_get_project_items_count_query,
   build_get_all_project_items_query
 )
-from utils import GITHUB_GRAPHQL_URL, ORGANIZATION, STATUS_MAPPER, MONTH_MAPPER
-from datetime import datetime, timedelta
-import pandas as pd
-
-import os.path
+from utils import GITHUB_GRAPHQL_URL, ORGANIZATION, formatters, format_data
+from dotenv import load_dotenv
+import os
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -17,47 +16,23 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-# If modifying these scopes, delete the file token.json.
+load_dotenv()
+
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-# The ID and range of a sample spreadsheet.
-SAMPLE_SPREADSHEET_ID = "1Ek5cl3SoJbuo5946G6TFyssjISu--8poMg5sQsWmT0w"
-SAMPLE_RANGE_NAME = "[APP FIREWALL] Timeline 2024.1!C7"
+def parse_arguments():
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--sample-sheet-id')
+  parser.add_argument('--sample-range-names')
+  parser.add_argument('--project-names')
+  return parser.parse_args()
 
-
-def sprint_formatter(field):
-  date_format = '%Y-%m-%d'
-  duration = timedelta(days=field.get('duration'))
-  start_date = datetime.strptime(field.get('startDate'), date_format)
-  sprint = field.get('title')
-  end_date = start_date + duration
-
-  return {
-    'Sprint': sprint,
-    'Start Date': f'{start_date.day}-{MONTH_MAPPER.get(start_date.month)}',
-    'End Date': f'{end_date.day}-{MONTH_MAPPER.get(end_date.month)}'
-  }
-
-
-def assignees_formatter(field):
-  assignees = [node.get('login') for node in field.get('users').get('nodes')]
-  return {
-    'Assignees': ','.join(assignees)
-  }
-
-
-formatters = {
-  'Title': lambda field: { 'Title': field.get('text', '') },
-  'Status': lambda field: { 'Status': field.get('name', '') },
-  'Sprint': sprint_formatter,
-  'Assignees': assignees_formatter
-}
 
 def create_client():
-  # TODO: add gh token to env
+  gh_token = os.getenv('GH_TOKEN')
   transport = AIOHTTPTransport(
     url=GITHUB_GRAPHQL_URL,
-    headers={'Authorization': 'Bearer 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'},
+    headers={'Authorization': f'Bearer {gh_token}'},
   )
   return Client(transport=transport, fetch_schema_from_transport=True)
 
@@ -119,33 +94,13 @@ def google_auth():
   return creds
 
 
-def format_data(data):
-  formatted_data = []
-  for row in data:
-    formatted_data.append(
-      [
-        '',
-        row.get('Sprint', ''),
-        row.get('Title', ''),
-        '',
-        row.get('Start Date', ''),
-        row.get('Assignees', ''),
-        row.get('End Date', ''),
-        '',
-        STATUS_MAPPER.get(row.get('Status', ''))
-      ]
-    )
-
-  return formatted_data
-
-
-def main():
+def run(sheet_id, range_name, project_name):
   client = create_client()
-  project_id = get_project_id_by_name(client, 'App Firewall')
+  project_id = get_project_id_by_name(client, project_name)
   items_count = get_project_items_count(client, project_id)
 
   data = get_project_items(client, project_id, items_count)
-  #################################################################
+
   creds = google_auth()
 
   try:
@@ -153,13 +108,26 @@ def main():
     # Call the Sheets API
     sheet = service.spreadsheets()
     sheet.values().update(
-      spreadsheetId=SAMPLE_SPREADSHEET_ID,
-      range=SAMPLE_RANGE_NAME,
+      spreadsheetId=sheet_id,
+      range=f'{range_name}!C7',
       valueInputOption='USER_ENTERED',
       body={'values': format_data(data)}
     ).execute()
   except HttpError as err:
     print(err)
+
+
+def main():
+  args = parse_arguments()
+  sheet_id = args.sample_sheet_id
+  range_names = args.sample_range_names.split(',')
+  project_names = args.project_names.split(',')
+
+  for item in zip(range_names, project_names):
+    range_name, project_name = item
+    print(f'Running for {project_name}')
+    run(sheet_id, range_name, project_name)
+
 
 if __name__ == '__main__':
   main()
