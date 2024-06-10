@@ -2,6 +2,8 @@
 
 This script's main goal is to reduce the manual work of filling Google Sheets with tasks extracted from GitHub Projects.
 
+First of all, you're gonna need Python3 and Virtualenv to run this script.
+
 We expect the GitHub Projects to have the following columns:
 
 | Column Name | Column Type   |
